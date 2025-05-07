@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ポモドーロタイマー</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    h1 { font-size: 2em; }
+    #timer { font-size: 4em; margin: 1em 0; }
+    button { font-size: 1.2em; padding: 0.5em 1em; margin: 0.5em; }
+
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ff6347" />
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js');
+    }
+    </script>
+  </style>
+</head>
+
+<body>
+  <h1>ポモドーロタイマー</h1>
+  <div id="status">作業時間</div>
+  <div id="timer">25:00</div>
+  <button onclick="startTimer()">スタート</button>
+  <button onclick="pauseTimer()">一時停止</button>
+  <button onclick="resetTimer()">リセット</button>
+  <div>セット数: <span id="setCount">0</span></div>
+  <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"></audio>
+
+  <script>
+    const workTime = 25 * 60;
+    const shortBreak = 5 * 60;
+    const longBreak = 15 * 60;
+    let timer;
+    let remaining = workTime;
+    let isRunning = false;
+    let isBreak = false;
+    let setCount = 0;
+
+    const timerDisplay = document.getElementById("timer");
+    const statusDisplay = document.getElementById("status");
+    const setCountDisplay = document.getElementById("setCount");
+    const beep = document.getElementById("beep");
+
+    function format(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const s = (seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function updateDisplay() {
+      timerDisplay.textContent = format(remaining);
+      setCountDisplay.textContent = setCount;
+    }
+
+    function tick() {
+      if (remaining > 0) {
+        remaining--;
+        updateDisplay();
+      } else {
+        beep.play();
+        clearInterval(timer);
+        isRunning = false;
+
+        if (!isBreak) {
+          setCount++;
+          if (setCount % 4 === 0) {
+            remaining = longBreak;
+            statusDisplay.textContent = "長い休憩";
+          } else {
+            remaining = shortBreak;
+            statusDisplay.textContent = "短い休憩";
+          }
+          isBreak = true;
+        } else {
+          remaining = workTime;
+          statusDisplay.textContent = "作業時間";
+          isBreak = false;
+        }
+
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      if (!isRunning) {
+        timer = setInterval(tick, 1000);
+        isRunning = true;
+      }
+    }
+
+    function pauseTimer() {
+      clearInterval(timer);
+      isRunning = false;
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      isRunning = false;
+      isBreak = false;
+      remaining = workTime;
+      setCount = 0;
+      statusDisplay.textContent = "作業時間";
+      updateDisplay();
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>
